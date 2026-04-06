@@ -6,18 +6,30 @@ struct HomeView: View {
     
     @State private var selectedSegment = 0
     @State private var showAddSheet = false
-    @StateObject private var vm = TransactionViewModel()
+    @State private var selectedCategory: String? = nil
+    
+    @State private var showFilterSheet = false
+    @State private var selectedCategories: Set<String> = []
+    @State private var selectedType: String? = nil
+    
+    @EnvironmentObject var vm: TransactionViewModel
     @EnvironmentObject var userVM: UserViewModel
     
     var body: some View {
         
         ZStack {
             
-            Color.black.ignoresSafeArea()
+            Color(.systemBackground).ignoresSafeArea()
             
             VStack(spacing: 20) {
                 
-                headerView
+                AppHeaderView(
+                    showFilter: true,
+                    onFilterTap: {
+                        showFilterSheet = true
+                    }
+                )
+                .environmentObject(vm)
                 
                 ScrollView(showsIndicators: false) {
                     
@@ -38,6 +50,9 @@ struct HomeView: View {
                 showAddSheet = true
             }
         }
+        .alert(vm.alertMessage, isPresented: $vm.showAlert) {
+            Button("OK", role: .cancel) {}
+        }
         .sheet(isPresented: $showAddSheet) {
             AddTransactionView { amount, category, note, isIncome in
                 vm.addTransaction(
@@ -48,37 +63,19 @@ struct HomeView: View {
                 )
             }
         }
+        .sheet(isPresented: $showFilterSheet) {
+            FilterView(
+                selectedCategories: $selectedCategories,
+                selectedType: $selectedType
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        
     }
 }
 
 extension HomeView {
-    
-    var headerView: some View {
-        HStack {
-            
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white.opacity(0.9))
-                    .frame(width: 35, height: 35)
-                    .overlay(
-                        Text("S")
-                            .foregroundColor(.black)
-                    )
-                
-                Text("StaAssets")
-                    .foregroundColor(.white)
-                    .font(.headline)
-            }
-            
-            Spacer()
-            
-            HStack(spacing: 16) {
-                Image(systemName: "magnifyingglass")
-                Image(systemName: "bell")
-            }
-            .foregroundColor(.white)
-        }
-    }
     
     var greetingView: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -150,65 +147,139 @@ extension HomeView {
         VStack(alignment: .leading, spacing: 20) {
             
             Text("Your expenses")
-                .foregroundColor(.white)
                 .font(.headline)
+                .foregroundStyle(.primary)
             
-            CustomSegmentedControl(
-                selectedIndex: $selectedSegment,
-                titles: ["Weekly", "Monthly"]
-            )
+            Picker("", selection: $selectedSegment) {
+                Text("Weekly").tag(0)
+                Text("Monthly").tag(1)
+            }
+            .pickerStyle(.segmented)
             
             VStack(spacing: 16) {
                 
-                if vm.transactions.isEmpty {
-                    Text("No transactions yet")
-                        .foregroundColor(.gray)
+                let filtered = vm.transactions.filter { transaction in
+                    
+                    // Category
+                    let categoryMatch = selectedCategories.isEmpty ||
+                        selectedCategories.contains(transaction.category)
+                    
+                    // Type
+                    let typeMatch: Bool
+                    if let selectedType {
+                        if selectedType == "Income" {
+                            typeMatch = transaction.isIncome
+                        } else {
+                            typeMatch = !transaction.isIncome
+                        }
+                    } else {
+                        typeMatch = true
+                    }
+                    
+                    return categoryMatch && typeMatch
+                }
+                
+                if filtered.isEmpty {
+                    Text("No transactions")
+                        .foregroundStyle(.secondary)
                         .padding(.top, 20)
                 } else {
-                    ForEach(vm.transactions) { transaction in
-                        expenseCard(
-                            title: transaction.category.uppercased(),
-                            subtitle: transaction.note.isEmpty ? "No note" : transaction.note,
-                            amount: "₹\(Int(transaction.amount))"
-                        )
+                    ForEach(filtered) { transaction in
+                        expenseCard(transaction: transaction)
                     }
                 }
             }
         }
     }
     
-    func expenseCard(title: String, subtitle: String, amount: String) -> some View {
+    func expenseCard(transaction: Transaction) -> some View {
         
         HStack {
             
-            Circle()
-                .stroke(Color.white.opacity(0.5), lineWidth: 3)
-                .frame(width: 40, height: 40)
+            ZStack {
+                Circle()
+                    .fill(Color.primary.opacity(0.1))
+                    .frame(width: 40, height: 40)
+                
+                Image(systemName: categoryIcon(transaction.category))
+                    .font(.system(size: 16, weight: .semibold))
+            }
             
             VStack(alignment: .leading) {
-                Text(title)
-                    .foregroundColor(.white)
+                Text(transaction.category.uppercased())
                     .font(.headline)
                 
-                Text(subtitle)
-                    .foregroundColor(.gray)
+                Text(transaction.note.isEmpty ? "No note" : transaction.note)
                     .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             
             Spacer()
             
-            Text(amount)
-                .foregroundColor(.white)
+            Text("₹\(Int(transaction.amount))")
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color.white.opacity(0.1))
+                .background(Color.primary.opacity(0.1))
                 .cornerRadius(10)
         }
         .padding()
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(20)
+        .background(
+            ZStack {
+                
+                // Base card
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(.secondarySystemBackground))
+                
+                // Gradient (left fade)
+                LinearGradient(
+                    colors: gradientColors(for: transaction.category),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .opacity(0.35)
+                .mask(
+                    LinearGradient(
+                        colors: [.black, .clear, .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.black.opacity(0.55))
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.primary.opacity(0.08))
+        )
     }
-
+    
+    func gradientColors(for category: String) -> [Color] {
+        switch category {
+        case "Food":
+            return [.orange, .red]
+        case "Travel":
+            return [.blue, .cyan]
+        case "Shopping":
+            return [.purple, .pink]
+        case "Bills":
+            return [.green, .mint]
+        default:
+            return [.gray, .black]
+        }
+    }
+    
+    func categoryIcon(_ category: String) -> String {
+        switch category {
+        case "Food": return "fork.knife"
+        case "Travel": return "airplane"
+        case "Shopping": return "bag"
+        case "Bills": return "doc.text"
+        default: return "square.grid.2x2"
+        }
+    }
 }
 
 #Preview {

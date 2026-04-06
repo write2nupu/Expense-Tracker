@@ -6,6 +6,10 @@ import Combine
 final class TransactionViewModel: ObservableObject {
     
     @Published var transactions: [Transaction] = []
+    @Published var balance: Double = 0
+    @Published var alertMessage: String = ""
+    @Published var showAlert: Bool = false
+    @Published var notifications: [String] = []
     
     private let context = StorageManager.shared.context
     
@@ -35,16 +39,26 @@ final class TransactionViewModel: ObservableObject {
         note: String,
         isIncome: Bool
     ) {
-        let entity = TransactionEntity(context: context)
         
-        entity.id = UUID()
-        entity.amount = amount
-        entity.category = category
-        entity.date = Date()
-        entity.note = note
-        entity.isIncome = isIncome
+        if !isIncome && amount > balance {
+            alertMessage = "Insufficient balance.\nCannot spend ₹\(Int(amount))"
+            showAlert = true
+            return
+        }
         
-        save()
+        let message: String
+
+        if isIncome {
+            balance += amount
+            message = "₹\(Int(amount)) credited. Balance: ₹\(Int(balance))"
+        } else {
+            balance -= amount
+            message = "₹\(Int(amount)) debited. Balance: ₹\(Int(balance))"
+        }
+
+        alertMessage = message
+        notifications.insert(message, at: 0)
+        showAlert = true
     }
     
     // MARK: - Delete

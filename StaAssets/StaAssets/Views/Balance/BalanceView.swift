@@ -15,7 +15,8 @@ struct BalanceView: View {
             
             VStack(spacing: 20) {
                 
-                header
+                AppHeaderView {
+                }
                 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 25) {
@@ -51,29 +52,6 @@ struct BalanceView: View {
 }
 
 extension BalanceView {
-    
-    var header: some View {
-        HStack {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white.opacity(0.9))
-                    .frame(width: 35, height: 35)
-                    .overlay(Text("P").foregroundColor(.black))
-                
-                Text("PayU")
-                    .foregroundColor(.white)
-                    .font(.headline)
-            }
-            
-            Spacer()
-            
-            HStack(spacing: 16) {
-                Image(systemName: "magnifyingglass")
-                Image(systemName: "bell")
-            }
-            .foregroundColor(.white)
-        }
-    }
     
     var balanceHeader: some View {
         VStack(alignment: .leading, spacing: 6) {

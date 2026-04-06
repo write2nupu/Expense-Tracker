@@ -9,7 +9,7 @@ struct ProfileView: View {
     
     @State private var password = ""
     @State private var confirmPassword = ""
-    @StateObject private var vm = TransactionViewModel()
+    @EnvironmentObject var vm: TransactionViewModel
     @EnvironmentObject var userVM: UserViewModel
     
     var body: some View {
@@ -19,7 +19,8 @@ struct ProfileView: View {
             
             VStack(spacing: 20) {
                 
-                header
+                AppHeaderView {
+                }
                 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 25) {
@@ -58,30 +59,6 @@ struct ProfileView: View {
 
 extension ProfileView {
     
-    var header: some View {
-        HStack {
-            
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white.opacity(0.9))
-                    .frame(width: 35, height: 35)
-                    .overlay(Text("P").foregroundColor(.black))
-                
-                Text("PayU")
-                    .foregroundColor(.white)
-                    .font(.headline)
-            }
-            
-            Spacer()
-            
-            HStack(spacing: 16) {
-                Image(systemName: "magnifyingglass")
-                Image(systemName: "bell")
-            }
-            .foregroundColor(.white)
-        }
-    }
-    
     var profileHeader: some View {
         HStack(spacing: 12) {
             
@@ -99,13 +76,14 @@ extension ProfileView {
     }
     
     var toggleControl: some View {
-        CustomSegmentedControl(
-            selectedIndex: Binding(
-                get: { isEditing ? 1 : 0 },
-                set: { isEditing = ($0 == 1) }
-            ),
-            titles: ["Preview", "Edit"]
-        )
+        Picker("", selection: Binding(
+            get: { isEditing ? 1 : 0 },
+            set: { isEditing = ($0 == 1) }
+        )) {
+            Text("Preview").tag(0)
+            Text("Edit").tag(1)
+        }
+        .pickerStyle(.segmented)
     }
     
     var previewView: some View {
