@@ -1,9 +1,11 @@
 
 import SwiftUI
+import Combine
 import Charts
 
 struct BalanceView: View {
     
+    @StateObject private var vm = TransactionViewModel()
     @State private var showAddSheet = false
     
     var body: some View {
@@ -35,6 +37,16 @@ struct BalanceView: View {
                 showAddSheet = true
             }
         }
+        .sheet(isPresented: $showAddSheet) {
+            AddTransactionView { amount, category, note, isIncome in
+                vm.addTransaction(
+                    amount: amount,
+                    category: category,
+                    note: note,
+                    isIncome: isIncome
+                )
+            }
+        }
     }
 }
 
@@ -42,7 +54,6 @@ extension BalanceView {
     
     var header: some View {
         HStack {
-            
             HStack(spacing: 10) {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(Color.white.opacity(0.9))
@@ -151,15 +162,19 @@ extension BalanceView {
     }
     
     var chartData: [ChartData] {
-            [
-                ChartData(day: "Mon", amount: 300),
-                ChartData(day: "Tue", amount: 100),
-                ChartData(day: "Wed", amount: 200),
-                ChartData(day: "Thu", amount: 400),
-                ChartData(day: "Fri", amount: 350),
-                ChartData(day: "Sat", amount: 150)
-            ]
+        
+        let grouped = Dictionary(grouping: vm.transactions) { transaction in
+            let formatter = DateFormatter()
+            formatter.dateFormat = "E"
+            return formatter.string(from: transaction.date)
         }
+        
+        return grouped.map { (day, transactions) in
+            let total = transactions.reduce(0) { $0 + $1.amount }
+            return ChartData(day: day, amount: total)
+        }
+        .sorted { $0.day < $1.day }
+    }
         
     var chartSection: some View {
         
@@ -171,6 +186,7 @@ extension BalanceView {
                     y: .value("Amount", item.amount)
                 )
                 .cornerRadius(6)
+                .foregroundStyle(.purple)
             }
             .frame(height: 200)
             
@@ -181,11 +197,19 @@ extension BalanceView {
                 
                 Spacer()
                 
-                Text("$350.00 / $640.00")
+                Text("₹\(totalExpenses) / ₹\(totalIncome)")
                     .foregroundColor(.purple)
                     .font(.caption.bold())
             }
         }
+    }
+    
+    var totalExpenses: Int {
+        Int(vm.transactions.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount })
+    }
+
+    var totalIncome: Int {
+        Int(vm.transactions.filter { $0.isIncome }.reduce(0) { $0 + $1.amount })
     }
 }
 

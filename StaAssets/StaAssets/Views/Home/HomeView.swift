@@ -1,11 +1,13 @@
 
 import SwiftUI
+import Combine
 
 struct HomeView: View {
     
     @State private var selectedSegment = 0
     @State private var showAddSheet = false
     @StateObject private var vm = TransactionViewModel()
+    @EnvironmentObject var userVM: UserViewModel
     
     var body: some View {
         
@@ -80,7 +82,7 @@ extension HomeView {
     
     var greetingView: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Hey, Alex")
+            Text("Hey, \(userVM.name.isEmpty ? "User" : userVM.name)")
                 .foregroundColor(.white)
                 .font(.title2.bold())
             
@@ -121,7 +123,8 @@ extension HomeView {
                             .foregroundColor(.white.opacity(0.7))
                             .font(.caption)
                         
-                        Text("ALEX")
+                        Text(userVM.name)
+                            .textCase(.uppercase)
                             .foregroundColor(.white)
                     }
                     

@@ -1,14 +1,16 @@
 
 import SwiftUI
+import Combine
 
 struct ProfileView: View {
     
     @State private var isEditing = false
     @State private var showAddSheet = false
-    @State private var name = "Alex yu"
-    @State private var email = "alex@gmail.com"
+    
     @State private var password = ""
     @State private var confirmPassword = ""
+    @StateObject private var vm = TransactionViewModel()
+    @EnvironmentObject var userVM: UserViewModel
     
     var body: some View {
         
@@ -39,6 +41,16 @@ struct ProfileView: View {
             
             FloatingActionButton {
                 showAddSheet = true
+            }
+        }
+        .sheet(isPresented: $showAddSheet) {
+            AddTransactionView { amount, category, note, isIncome in
+                vm.addTransaction(
+                    amount: amount,
+                    category: category,
+                    note: note,
+                    isIncome: isIncome
+                )
             }
         }
     }
@@ -78,7 +90,7 @@ extension ProfileView {
                 .frame(width: 45, height: 45)
                 .overlay(Text("P").foregroundColor(.black))
             
-            Text(name)
+            Text(userVM.name)
                 .foregroundColor(.white)
                 .font(.headline)
             
@@ -100,13 +112,13 @@ extension ProfileView {
         
         VStack(alignment: .leading, spacing: 16) {
             
-            Text("Total spendings: $2000")
+            Text("Total spendings: ₹\(totalExpenses)")
                 .foregroundColor(.white)
             
-            Text("Email : \(email)")
+            Text("Email : \(userVM.email)")
                 .foregroundColor(.white)
             
-            Text("Balance : $20000")
+            Text("Balance : ₹\(balance)")
                 .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -116,13 +128,13 @@ extension ProfileView {
         
         VStack(spacing: 16) {
             
-            inputField("Full Name", text: $name)
-            inputField("Email", text: $email)
+            inputField("Full Name", text: $userVM.name)
+            inputField("Email", text: $userVM.email)
             passwordField("Password", text: $password)
             passwordField("Confirm Password", text: $confirmPassword)
             
             Button {
-                
+                isEditing = false
             } label: {
                 Text("Update Details")
                     .frame(maxWidth: .infinity)
@@ -133,6 +145,22 @@ extension ProfileView {
             }
             .padding(.top, 10)
         }
+    }
+    
+    var totalExpenses: Int {
+        Int(vm.transactions
+            .filter { !$0.isIncome }
+            .reduce(0) { $0 + $1.amount })
+    }
+
+    var totalIncome: Int {
+        Int(vm.transactions
+            .filter { $0.isIncome }
+            .reduce(0) { $0 + $1.amount })
+    }
+
+    var balance: Int {
+        totalIncome - totalExpenses
     }
     
     func inputField(_ title: String, text: Binding<String>) -> some View {
