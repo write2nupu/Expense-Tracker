@@ -10,12 +10,14 @@ import CoreData
 
 @main
 struct StaAssetsApp: App {
-    let persistenceController = PersistenceController.shared
-
+    
+    let persistenceController = StorageManager.shared
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            RootView()
+                .environment(\.managedObjectContext,
+                              persistenceController.container.viewContext)
         }
     }
 }
