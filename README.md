@@ -1,4 +1,4 @@
-# Expense-Tracker
+# StaAssets
 
 A modern fintech-style expense tracker iOS app built using SwiftUI and MVVM architecture.
 
