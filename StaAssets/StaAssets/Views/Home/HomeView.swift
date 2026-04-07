@@ -70,6 +70,7 @@ struct HomeView: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+            .presentationContentInteraction(.scrolls)
         }
         
     }
@@ -80,11 +81,11 @@ extension HomeView {
     var greetingView: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Hey, \(userVM.name.isEmpty ? "User" : userVM.name)")
-                .foregroundColor(.white)
+                .foregroundStyle(.primary)
                 .font(.title2.bold())
             
             Text("Add your yesterday’s expense")
-                .foregroundColor(.gray)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -101,44 +102,48 @@ extension HomeView {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .cornerRadius(25)
+            
+            // 🔥 adaptive overlay
+            RoundedRectangle(cornerRadius: 25)
+                .fill(Color.primary.opacity(0.15))
             
             VStack(alignment: .leading, spacing: 20) {
                 
                 Text("ADRBank")
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .font(.headline)
                 
                 Text("8763 1111 2222 0329")
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .font(.title2.bold())
                 
                 HStack {
                     
                     VStack(alignment: .leading) {
                         Text("Card Holder Name")
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundStyle(.white.opacity(0.7))
                             .font(.caption)
                         
                         Text(userVM.name)
                             .textCase(.uppercase)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                     }
                     
                     Spacer()
                     
                     VStack(alignment: .trailing) {
                         Text("Expired Date")
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundStyle(.white.opacity(0.7))
                             .font(.caption)
                         
                         Text("10/28")
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                     }
                 }
             }
             .padding()
         }
+        .clipShape(RoundedRectangle(cornerRadius: 25))
         .frame(height: 200)
     }
     
@@ -226,46 +231,65 @@ extension HomeView {
         .background(
             ZStack {
                 
-                // Base card
+                // Base card (adaptive)
                 RoundedRectangle(cornerRadius: 20)
                     .fill(Color(.secondarySystemBackground))
                 
-                // Gradient (left fade)
+                // Gradient (left fade only)
                 LinearGradient(
                     colors: gradientColors(for: transaction.category),
                     startPoint: .leading,
                     endPoint: .trailing
                 )
-                .opacity(0.35)
+                .opacity(0.25) // softer
                 .mask(
                     LinearGradient(
-                        colors: [.black, .clear, .clear],
+                        colors: [.black, .clear], // FIXED
                         startPoint: .leading,
                         endPoint: .trailing
                     )
                 )
-                
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.black.opacity(0.55))
             }
         )
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.primary.opacity(0.08))
+                .strokeBorder(Color.primary.opacity(0.06))
         )
     }
     
     func gradientColors(for category: String) -> [Color] {
         switch category {
+
+        case "Savings":
+            return [.green, .mint]
+        case "Debts":
+            return [.red, .pink]
+        case "Subscriptions":
+            return [.purple, .indigo]
+        case "Utilities":
+            return [.yellow, .orange]
+        case "Housing":
+            return [.brown, .orange]
+        case "Transportation":
+            return [.blue, .cyan]
+        case "Personal Care":
+            return [.pink, .red]
+        case "Gifts":
+            return [.purple, .pink]
+        case "Insurance":
+            return [.gray, .blue]
+        case "Entertainment":
+            return [.indigo, .purple]
         case "Food":
             return [.orange, .red]
         case "Travel":
-            return [.blue, .cyan]
+            return [.teal, .blue]
         case "Shopping":
-            return [.purple, .pink]
+            return [.pink, .purple]
         case "Bills":
-            return [.green, .mint]
+            return [.teal, .green]
+            
         default:
             return [.gray, .black]
         }
@@ -273,10 +297,21 @@ extension HomeView {
     
     func categoryIcon(_ category: String) -> String {
         switch category {
+        case "Savings": return "banknote"
+        case "Debts": return "creditcard"
+        case "Subscriptions": return "repeat"
+        case "Utilities": return "bolt"
+        case "Housing": return "house"
+        case "Transportation": return "car"
+        case "Personal Care": return "heart.text.square"
+        case "Gifts": return "gift"
+        case "Insurance": return "shield"
+        case "Entertainment": return "gamecontroller"
         case "Food": return "fork.knife"
         case "Travel": return "airplane"
         case "Shopping": return "bag"
         case "Bills": return "doc.text"
+        
         default: return "square.grid.2x2"
         }
     }

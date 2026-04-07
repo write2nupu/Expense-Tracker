@@ -1,6 +1,5 @@
 
 import SwiftUI
-import Combine
 import Charts
 
 struct BalanceView: View {
@@ -11,17 +10,21 @@ struct BalanceView: View {
     var body: some View {
         
         ZStack {
-            Color.black.ignoresSafeArea()
             
-            VStack(spacing: 20) {
+            Color(.systemBackground)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
                 
-                AppHeaderView {
-                }
+                AppHeaderView {}
+                    .padding(.horizontal)
+                    .padding(.top, 8)
                 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 25) {
+                    
+                    VStack(alignment: .leading, spacing: 28) {
                         
-                        balanceHeader
+                        header
                         
                         creditScoreView
                         
@@ -29,13 +32,30 @@ struct BalanceView: View {
                         
                         chartSection
                     }
-                    .padding(.bottom, 100)
+                    .padding(.horizontal)
+                    .padding(.bottom, 120)
                 }
             }
-            .padding(.horizontal)
             
-            FloatingActionButton {
-                showAddSheet = true
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    
+                    Button {
+                        showAddSheet = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.title2.bold())
+                            .foregroundColor(.black)
+                            .frame(width: 60, height: 60)
+                            .background(Color.primary)
+                            .clipShape(Circle())
+                            .shadow(radius: 10)
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 30)
+                }
             }
         }
         .sheet(isPresented: $showAddSheet) {
@@ -53,69 +73,244 @@ struct BalanceView: View {
 
 extension BalanceView {
     
-    var balanceHeader: some View {
+    // MARK: - Header
+    var header: some View {
         VStack(alignment: .leading, spacing: 6) {
+            
             Text("Your Balances")
-                .foregroundColor(.white)
-                .font(.title2.bold())
+                .font(.title.bold())
+                .foregroundStyle(.primary)
             
             Text("Manage your multi-currency accounts")
-                .foregroundColor(.gray)
+                .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 10)
     }
     
+    // MARK: - Credit Score
     var creditScoreView: some View {
         
-        VStack(spacing: 16) {
+        let score: Double = 660
+        let maxScore: Double = 850
+        let progress = score / maxScore
+        
+        return VStack(spacing: 12) {
             
-            ZStack {
+            ZStack(alignment: .bottom) {
                 
-                Circle()
-                    .stroke(Color.white.opacity(0.1), lineWidth: 20)
-                    .frame(width: 180, height: 180)
+                // MARK: - ARC SYSTEM
+                ZStack {
+                    GaugeSegments()
+                    GaugeDots()
+                    GaugeIndicator(progress: progress)
+                }
+                .frame(width: 260, height: 160)
                 
-                Circle()
-                    .trim(from: 0.0, to: 0.66)
-                    .stroke(
-                        AngularGradient(
-                            colors: [.green, .purple, .blue],
-                            center: .center
-                        ),
-                        style: StrokeStyle(lineWidth: 20, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(140))
-                    .frame(width: 180, height: 180)
-                
-                VStack {
+                // MARK: - CENTER TEXT (ANCHORED)
+                VStack(spacing: 6) {
+                    
                     Text("660")
-                        .font(.largeTitle.bold())
-                        .foregroundColor(.white)
+                        .font(.system(size: 42, weight: .bold))
                     
                     Text("Your Credit Score is average")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.secondary)
+                    
+                    Text("Last Check on 21 Apr")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
                 }
+                .offset(y: 20)
             }
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    struct GaugeIndicator: View {
+        
+        var progress: Double
+        
+        let startAngle: Double = 180
+        let totalAngle: Double = 180
+        
+        var body: some View {
             
-            Text("Last Check on 21 Apr")
-                .foregroundColor(.gray)
-                .font(.caption)
+            GeometryReader { geo in
+                
+                let size = geo.size
+                let radius = size.width / 2 - 20
+                let center = CGPoint(x: size.width / 2, y: size.height)
+                
+                let angle = (startAngle + progress * totalAngle) * .pi / 180
+                
+                let x = center.x + radius * cos(angle)
+                let y = center.y + radius * sin(angle)
+                
+                ZStack {
+                    
+                    Circle()
+                        .fill(Color.blue.opacity(0.25))
+                        .frame(width: 26, height: 26)
+                        .blur(radius: 6)
+                    
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 16, height: 16)
+                    
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 6, height: 6)
+                }
+                .position(x: x, y: y)
+            }
         }
     }
     
+    struct GaugeSegments: View {
+        
+        let segments: [[Color]] = [
+            [.green, .mint],
+            [.purple, .pink],
+            [.blue, .cyan],
+            [.orange, .red]
+        ]
+        
+        let startAngle: Double = 180
+        let totalAngle: Double = 180
+        let spacing: Double = 8
+        
+        var body: some View {
+            
+            let segmentAngle = (totalAngle - spacing * 3) / 4
+            
+            ZStack {
+                ForEach(0..<4) { i in
+                    
+                    let start = startAngle + Double(i) * (segmentAngle + spacing)
+                    let end = start + segmentAngle
+                    
+                    ArcShape(startAngle: start, endAngle: end)
+                        .stroke(
+                            LinearGradient(
+                                colors: segments[i],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            style: StrokeStyle(
+                                lineWidth: 16,
+                                lineCap: .round
+                            )
+                        )
+                }
+            }
+        }
+    }
+    
+    struct GaugeDots: View {
+        
+        let startAngle: Double = 180
+        let totalAngle: Double = 180
+        
+        var body: some View {
+            
+            GeometryReader { geo in
+                
+                let size = geo.size
+                let radius = size.width / 2 - 20
+                let center = CGPoint(x: size.width / 2, y: size.height)
+                
+                ZStack {
+                    ForEach(0..<30) { i in
+                        
+                        let progress = Double(i) / 30
+                        let angle = (startAngle + progress * totalAngle) * .pi / 180
+                        
+                        let x = center.x + radius * cos(angle)
+                        let y = center.y + radius * sin(angle)
+                        
+                        Circle()
+                            .fill(Color.primary.opacity(0.25))
+                            .frame(width: 3, height: 3)
+                            .position(x: x, y: y)
+                    }
+                }
+            }
+        }
+    }
+    
+    struct SegmentedGauge: View {
+        
+        let colors: [Color] = [.green, .pink, .blue, .yellow]
+        
+        let totalAngle: Double = 220
+        let startAngle: Double = -110
+        let spacing: Double = 6
+        
+        var body: some View {
+            
+            let segmentAngle = (totalAngle - spacing * Double(colors.count - 1)) / Double(colors.count)
+            
+            ZStack {
+                ForEach(colors.indices, id: \.self) { i in
+                    
+                    let start = startAngle + Double(i) * (segmentAngle + spacing)
+                    let end = start + segmentAngle
+                    
+                    ArcShape(startAngle: start, endAngle: end)
+                        .stroke(
+                            colors[i],
+                            style: StrokeStyle(
+                                lineWidth: 18,
+                                lineCap: .round
+                            )
+                        )
+                }
+            }
+        }
+    }
+    
+    struct ArcShape: Shape {
+        
+        var startAngle: Double
+        var endAngle: Double
+        
+        func path(in rect: CGRect) -> Path {
+            
+            var path = Path()
+            
+            let center = CGPoint(
+                x: rect.midX,
+                y: rect.maxY
+            )
+            
+            let radius = rect.width / 2
+            
+            path.addArc(
+                center: center,
+                radius: radius,
+                startAngle: .degrees(startAngle),
+                endAngle: .degrees(endAngle),
+                clockwise: false
+            )
+            
+            return path
+        }
+    }
+    
+    // MARK: - Currency Card
     var currencyCard: some View {
         
         HStack {
             
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
+                
                 Text("CAD")
-                    .foregroundColor(.white)
                     .font(.headline)
                 
                 Text("Canadian Dollar")
-                    .foregroundColor(.gray)
                     .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             
             Spacer()
@@ -123,22 +318,62 @@ extension BalanceView {
             Button {
                 
             } label: {
-                HStack {
+                HStack(spacing: 6) {
                     Image(systemName: "plus")
                     Text("Enable")
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(10)
-                .foregroundColor(.white)
+                .font(.subheadline.weight(.medium))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
             }
         }
         .padding()
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(.ultraThinMaterial)
+        )
     }
     
+    // MARK: - Chart
+    
+    var chartSection: some View {
+        
+        VStack(alignment: .leading, spacing: 16) {
+            
+            Chart(chartData) { item in
+                
+                BarMark(
+                    x: .value("Day", item.day),
+                    y: .value("Amount", item.amount)
+                )
+                .cornerRadius(8)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.green, .blue],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                )
+            }
+            .frame(height: 220)
+            
+            HStack {
+                Text("Current margin: April Spendings")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Spacer()
+                
+                Text("₹\(totalExpenses) / ₹\(totalIncome)")
+                    .font(.caption.bold())
+                    .foregroundStyle(.primary)
+            }
+        }
+    }
+    
+    // MARK: - Data
     var chartData: [ChartData] {
         
         let grouped = Dictionary(grouping: vm.transactions) { transaction in
@@ -153,44 +388,28 @@ extension BalanceView {
         }
         .sorted { $0.day < $1.day }
     }
-        
-    var chartSection: some View {
-        
-        VStack(alignment: .leading, spacing: 16) {
-            
-            Chart(chartData) { item in
-                BarMark(
-                    x: .value("Day", item.day),
-                    y: .value("Amount", item.amount)
-                )
-                .cornerRadius(6)
-                .foregroundStyle(.purple)
-            }
-            .frame(height: 200)
-            
-            HStack {
-                Text("Current margin: April Spendings")
-                    .foregroundColor(.gray)
-                    .font(.caption)
-                
-                Spacer()
-                
-                Text("₹\(totalExpenses) / ₹\(totalIncome)")
-                    .foregroundColor(.purple)
-                    .font(.caption.bold())
-            }
-        }
-    }
     
     var totalExpenses: Int {
-        Int(vm.transactions.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount })
+        Int(vm.transactions.filter { !$0.isIncome }
+            .reduce(0) { $0 + $1.amount })
     }
 
     var totalIncome: Int {
-        Int(vm.transactions.filter { $0.isIncome }.reduce(0) { $0 + $1.amount })
+        Int(vm.transactions.filter { $0.isIncome }
+            .reduce(0) { $0 + $1.amount })
     }
-}
 
-#Preview {
-    BalanceView()
+    func arcSegment(color: Color, start: CGFloat, end: CGFloat) -> some View {
+        
+        Circle()
+            .trim(from: start * 0.75, to: end * 0.75)
+            .stroke(
+                color,
+                style: StrokeStyle(
+                    lineWidth: 18,
+                    lineCap: .round
+                )
+            )
+            .rotationEffect(.degrees(135))
+    }
 }

@@ -6,15 +6,29 @@ struct FilterView: View {
     @Environment(\.dismiss) var dismiss
     
     @Binding var selectedCategories: Set<String>
-    @Binding var selectedType: String? // "Income" / "Expense"
+    @Binding var selectedType: String?
     
-    let categories = ["Food", "Travel", "Shopping", "Bills"]
+    let categories = [
+        "Savings",
+        "Debts",
+        "Subscriptions",
+        "Utilities",
+        "Housing",
+        "Transportation",
+        "Personal Care",
+        "Gifts",
+        "Insurance",
+        "Entertainment",
+        "Food",
+        "Travel",
+        "Shopping",
+        "Bills"
+    ]
     
     var body: some View {
         
         VStack(spacing: 20) {
             
-            // HEADER
             HStack {
                 
                 if hasActiveFilters {
@@ -24,12 +38,6 @@ struct FilterView: View {
                             selectedType = nil
                         }
                     }
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity,
-                            removal: .opacity
-                        )
-                    )
                 }
                 
                 Spacer()
@@ -38,13 +46,11 @@ struct FilterView: View {
                     dismiss()
                 }
             }
-            .animation(.easeInOut(duration: 0.25), value: hasActiveFilters)
             
             Text("Filter by")
                 .font(.largeTitle.bold())
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            // 🔥 TYPE (ONLY THIS SEGMENT NOW)
             VStack(alignment: .leading, spacing: 10) {
                 
                 Text("Transaction Type")
@@ -61,31 +67,33 @@ struct FilterView: View {
                 .pickerStyle(.segmented)
             }
             
-            // CATEGORIES
             VStack(alignment: .leading, spacing: 12) {
                 
-                Text("Categories")
-                    .font(.headline)
-                
-                ForEach(categories, id: \.self) { category in
-                    
-                    HStack {
-                        Text(category)
+                ScrollView(showsIndicators: true) {
+                    VStack(spacing: 12) {
                         
-                        Spacer()
-                        
-                        if selectedCategories.contains(category) {
-                            Image(systemName: "checkmark.circle.fill")
+                        ForEach(categories, id: \.self) { category in
+                            
+                            HStack {
+                                Text(category)
+                                
+                                Spacer()
+                                
+                                if selectedCategories.contains(category) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                }
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                toggleCategory(category)
+                            }
                         }
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        toggleCategory(category)
-                    }
+                    .padding(.top, 4)
                 }
             }
             
-            Spacer()
+            Spacer(minLength: 0)
         }
         .padding()
     }
