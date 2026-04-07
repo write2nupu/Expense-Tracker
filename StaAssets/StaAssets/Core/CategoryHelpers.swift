@@ -1,5 +1,6 @@
 
 import Foundation
+import SwiftUI
 
 let allCategories = [
     "Savings",
@@ -35,5 +36,42 @@ func categoryIcon(_ category: String) -> String {
     case "Shopping": return "bag"
     case "Bills": return "doc.text"
     default: return "square.grid.2x2"
+    }
+}
+
+func gradientColors(for category: String) -> [Color] {
+    switch category {
+
+    case "Savings":
+        return [.green, .mint]
+    case "Debts":
+        return [.red, .pink]
+    case "Subscriptions":
+        return [.purple, .indigo]
+    case "Utilities":
+        return [.yellow, .orange]
+    case "Housing":
+        return [.brown, .orange]
+    case "Transportation":
+        return [.blue, .cyan]
+    case "Personal Care":
+        return [.pink, .red]
+    case "Gifts":
+        return [.purple, .pink]
+    case "Insurance":
+        return [.gray, .blue]
+    case "Entertainment":
+        return [.indigo, .purple]
+    case "Food":
+        return [.orange, .red]
+    case "Travel":
+        return [.teal, .blue]
+    case "Shopping":
+        return [.pink, .purple]
+    case "Bills":
+        return [.teal, .green]
+        
+    default:
+        return [.gray, .black]
     }
 }

@@ -27,9 +27,8 @@ struct BalanceView: View {
                     VStack(alignment: .leading, spacing: 28) {
                         
                         header
-                        
                         expenseGaugeView
-                        
+                        Spacer()
                         chartSection
                     }
                     .padding(.horizontal)
@@ -104,8 +103,11 @@ extension BalanceView {
             
             ZStack(alignment: .bottom) {
                 
-                DynamicGaugeSegments(values: segments)
-                    .frame(width: 260, height: 160)
+                DynamicGaugeSegments(
+                    values: segments,
+                    categories: topCategories.map { $0.0 } + (othersTotal > 0 ? ["Others"] : [])
+                )
+                    .frame(width: 280, height: 160)
                 
                 VStack(spacing: 6) {
                     Text("₹\(Int(totalExpense))")
@@ -115,8 +117,9 @@ extension BalanceView {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .offset(y: 20)
+                .offset(y: 10)
             }
+            .padding(.top, 20) 
         }
     }
     
@@ -133,7 +136,20 @@ extension BalanceView {
                 
                 ForEach(categoryTotals, id: \.category) { item in
                     
+                    let gradient = gradientColors(for: item.category)
+                    
                     HStack {
+                        
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: gradient,
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 10, height: 10)
+                        
                         Text(item.category)
                         
                         Spacer()
@@ -304,70 +320,80 @@ extension BalanceView {
 struct DynamicGaugeSegments: View {
     
     let values: [Double]
+    let categories: [String]
     
-    @State private var progress: Double = 0
-    
-    let colors: [[Color]] = [
-        [.purple, .pink],
-        [.blue, .cyan],
-        [.green, .mint],
-        [.orange, .red]
-    ]
+    @State private var progresses: [Double] = []
     
     let totalAngle: Double = 180
     let startAngle: Double = 180
-    let gap: Double = 9
+    let gap: Double = 12
     
     var body: some View {
         
         let totalGap = gap * Double(max(values.count - 1, 0))
         let usableAngle = totalAngle - totalGap
-        
         let angles = values.map { $0 * usableAngle }
         
         ZStack {
             
             ForEach(angles.indices, id: \.self) { i in
                 
-                let fullStart = startAngle
-                    + angles.prefix(i).reduce(0, +)
-                    + Double(i) * gap
+                let segmentStart = angles.prefix(i).reduce(0, +) + Double(i) * gap
+                let segmentEnd = segmentStart + angles[i]
                 
-                let fullEnd = fullStart + angles[i]
+                let progress = progresses.indices.contains(i) ? progresses[i] : 0
                 
-                // 👇 Animate END angle only
-                let animatedEnd = fullStart + (fullEnd - fullStart) * progress
+                let animatedEnd = segmentStart + (segmentEnd - segmentStart) * progress
+                
+                let category = categories.indices.contains(i) ? categories[i] : "Others"
+                let gradient = gradientColors(for: category)
                 
                 ArcShape(
-                    startAngle: fullStart,
-                    endAngle: animatedEnd
+                    startAngle: startAngle + segmentStart,
+                    endAngle: startAngle + animatedEnd
                 )
                 .stroke(
                     LinearGradient(
-                        colors: colors[min(i, colors.count - 1)],
+                        colors: gradient,
                         startPoint: .leading,
                         endPoint: .trailing
                     ),
                     style: StrokeStyle(
-                        lineWidth: 18,
-                        lineCap: .round
+                        lineWidth: 28,
+                        lineCap: .round,
+                        lineJoin: .round
                     )
                 )
             }
         }
         .onAppear {
-            animate()
+            DispatchQueue.main.async {
+                setupAnimation()
+            }
         }
         .onChange(of: values) { _, _ in
-            animate()
+            setupAnimation()
         }
     }
     
-    func animate() {
-        progress = 0
+    // MARK: - Smooth Sequential Animation
+    
+    func setupAnimation() {
         
-        withAnimation(.easeOut(duration: 1.2)) {
-            progress = 1
+        progresses = Array(repeating: 0, count: values.count)
+        
+        Task {
+            for i in progresses.indices {
+                
+                await MainActor.run {
+                    withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.7)) {
+                        progresses[i] = 1
+                    }
+                }
+                
+                // slight overlap → smooth continuous feel
+                try? await Task.sleep(nanoseconds: 400_000_000)
+            }
         }
     }
 }
@@ -376,6 +402,14 @@ struct ArcShape: Shape {
     
     var startAngle: Double
     var endAngle: Double
+    
+    var animatableData: AnimatablePair<Double, Double> {
+        get { AnimatablePair(startAngle, endAngle) }
+        set {
+            startAngle = newValue.first
+            endAngle = newValue.second
+        }
+    }
     
     func path(in rect: CGRect) -> Path {
         

@@ -10,88 +10,69 @@ struct AddTransactionView: View {
     @State private var note = ""
     @State private var isIncome = false
     
-    let categories = ["Food", "Travel", "Shopping", "Bills"]
-    
     var onSave: (Double, String, String, Bool) -> Void
     
     var body: some View {
         
         NavigationStack {
             
-            ZStack {
-                Color.black.ignoresSafeArea()
+            Form {
                 
-                VStack(spacing: 20) {
+                // MARK: - Amount
+                Section("Amount") {
+                    TextField("Enter amount", text: $amount)
+                        .keyboardType(.decimalPad)
+                }
+                
+                // MARK: - Category
+                Section("Category") {
                     
-                    // Amount
-                    VStack(alignment: .leading) {
-                        Text("Amount")
-                            .foregroundColor(.white)
-                        
-                        TextField("Enter amount", text: $amount)
-                            .keyboardType(.decimalPad)
-                            .padding()
-                            .background(Color.white.opacity(0.05))
-                            .cornerRadius(12)
-                            .foregroundColor(.white)
-                    }
-                    
-                    // Category
-                    VStack(alignment: .leading) {
-                        Text("Category")
-                            .foregroundColor(.white)
-                        
-                        Picker("", selection: $category) {
-                            ForEach(categories, id: \.self) {
-                                Text($0)
+                    Picker("Select Category", selection: $category) {
+                        ForEach(allCategories, id: \.self) { item in
+                            
+                            Label {
+                                Text(item)
+                            } icon: {
+                                Image(systemName: categoryIcon(item))
                             }
+                            .tag(item)
                         }
-                        .pickerStyle(.menu)
-                        .padding()
-                        .background(Color.white.opacity(0.05))
-                        .cornerRadius(12)
-                        .foregroundColor(.white)
                     }
-                    
-                    // Note
-                    VStack(alignment: .leading) {
-                        Text("Note")
-                            .foregroundColor(.white)
-                        
-                        TextField("Add note", text: $note)
-                            .padding()
-                            .background(Color.white.opacity(0.05))
-                            .cornerRadius(12)
-                            .foregroundColor(.white)
+                }
+                
+                // MARK: - Note
+                Section("Note") {
+                    TextField("Add note", text: $note)
+                }
+                
+                // MARK: - Income Toggle
+                Section {
+                    Toggle("Is Income?", isOn: $isIncome)
+                }
+            }
+            .navigationTitle("Add Transaction")
+            .navigationBarTitleDisplayMode(.inline)
+            
+            // MARK: - Toolbar
+            .toolbar {
+                
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
                     }
-                    
-                    // Income Toggle
-                    Toggle(isOn: $isIncome) {
-                        Text("Is Income?")
-                            .foregroundColor(.white)
-                    }
-                    
-                    Spacer()
-                    
-                    // Save Button
-                    Button {
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
                         if let value = Double(amount) {
                             onSave(value, category, note, isIncome)
                             dismiss()
                         }
-                    } label: {
-                        Text("Save Transaction")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white)
-                            .foregroundColor(.black)
-                            .cornerRadius(14)
                     }
+                    .fontWeight(.semibold)
+                    .disabled(amount.isEmpty)
                 }
-                .padding()
             }
-            .navigationTitle("Add Transaction")
-            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

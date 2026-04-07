@@ -15,15 +15,17 @@ struct ProfileView: View {
     var body: some View {
         
         ZStack {
-            Color.black.ignoresSafeArea()
             
-            VStack(spacing: 20) {
+            Color(.systemBackground)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
                 
-                AppHeaderView {
-                }
+                AppHeaderView {}
+                    .padding(.horizontal)
                 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 25) {
+                    VStack(spacing: 20) {
                         
                         profileHeader
                         
@@ -35,10 +37,10 @@ struct ProfileView: View {
                             previewView
                         }
                     }
+                    .padding()
                     .padding(.bottom, 100)
                 }
             }
-            .padding(.horizontal)
             
             FloatingActionButton {
                 showAddSheet = true
@@ -60,19 +62,33 @@ struct ProfileView: View {
 extension ProfileView {
     
     var profileHeader: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.white.opacity(0.9))
-                .frame(width: 45, height: 45)
-                .overlay(Text("P").foregroundColor(.black))
+            Circle()
+                .fill(Color.accentColor.opacity(0.15))
+                .frame(width: 50, height: 50)
+                .overlay(
+                    Text(String(userVM.name.prefix(1)))
+                        .font(.headline)
+                        .foregroundColor(.accentColor)
+                )
             
-            Text(userVM.name)
-                .foregroundColor(.white)
-                .font(.headline)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(userVM.name)
+                    .font(.headline)
+                
+                Text(userVM.email)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             
             Spacer()
         }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.secondarySystemBackground))
+        )
     }
     
     var toggleControl: some View {
@@ -84,22 +100,55 @@ extension ProfileView {
             Text("Edit").tag(1)
         }
         .pickerStyle(.segmented)
+        .padding(.horizontal, 4)
     }
     
     var previewView: some View {
         
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(spacing: 16) {
             
-            Text("Total spendings: ₹\(totalExpenses)")
-                .foregroundColor(.white)
+            statCard(title: "Total Expenses", value: totalExpenses, color: .primary)
+            statCard(title: "Total Income", value: totalIncome, color: .primary)
+            statCard(title: "Balance", value: balance, color: .primary)
             
-            Text("Email : \(userVM.email)")
-                .foregroundColor(.white)
+            infoRow(title: "Email", value: userVM.email)
+        }
+    }
+    
+    func statCard(title: String, value: Int, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
             
-            Text("Balance : ₹\(balance)")
-                .foregroundColor(.white)
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            Text("₹\(value)")
+                .font(.title3.bold())
+                .foregroundColor(color)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+    
+    func infoRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .foregroundStyle(.secondary)
+            
+            Spacer()
+            
+            Text(value)
+                .fontWeight(.medium)
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.secondarySystemBackground))
+        )
     }
     
     var editView: some View {
@@ -117,8 +166,8 @@ extension ProfileView {
                 Text("Update Details")
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.white)
-                    .foregroundColor(.black)
+                    .background(Color.accentColor)
+                    .foregroundColor(.white)
                     .cornerRadius(14)
             }
             .padding(.top, 10)
@@ -142,32 +191,34 @@ extension ProfileView {
     }
     
     func inputField(_ title: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             
             Text(title)
-                .foregroundColor(.white)
                 .font(.caption)
+                .foregroundStyle(.secondary)
             
-            TextField("Enter your \(title.lowercased())", text: text)
+            TextField("Enter \(title.lowercased())", text: text)
                 .padding()
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(12)
-                .foregroundColor(.white)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.secondarySystemBackground))
+                )
         }
     }
     
     func passwordField(_ title: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             
             Text(title)
-                .foregroundColor(.white)
                 .font(.caption)
+                .foregroundStyle(.secondary)
             
-            SecureField("Enter your \(title.lowercased())", text: text)
+            SecureField("Enter \(title.lowercased())", text: text)
                 .padding()
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(12)
-                .foregroundColor(.white)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.secondarySystemBackground))
+                )
         }
     }
 }

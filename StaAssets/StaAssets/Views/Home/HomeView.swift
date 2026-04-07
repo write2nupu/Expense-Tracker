@@ -244,7 +244,7 @@ extension HomeView {
                 .opacity(0.25) // softer
                 .mask(
                     LinearGradient(
-                        colors: [.black, .clear], // FIXED
+                        colors: [.clear, .black, .clear], // FIXED
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -256,43 +256,6 @@ extension HomeView {
             RoundedRectangle(cornerRadius: 20)
                 .strokeBorder(Color.primary.opacity(0.06))
         )
-    }
-    
-    func gradientColors(for category: String) -> [Color] {
-        switch category {
-
-        case "Savings":
-            return [.green, .mint]
-        case "Debts":
-            return [.red, .pink]
-        case "Subscriptions":
-            return [.purple, .indigo]
-        case "Utilities":
-            return [.yellow, .orange]
-        case "Housing":
-            return [.brown, .orange]
-        case "Transportation":
-            return [.blue, .cyan]
-        case "Personal Care":
-            return [.pink, .red]
-        case "Gifts":
-            return [.purple, .pink]
-        case "Insurance":
-            return [.gray, .blue]
-        case "Entertainment":
-            return [.indigo, .purple]
-        case "Food":
-            return [.orange, .red]
-        case "Travel":
-            return [.teal, .blue]
-        case "Shopping":
-            return [.pink, .purple]
-        case "Bills":
-            return [.teal, .green]
-            
-        default:
-            return [.gray, .black]
-        }
     }
 }
 
