@@ -1,7 +1,7 @@
 
 import Foundation
 
-struct Transaction: Identifiable {
+struct Transaction: Identifiable, Equatable {
     let id: UUID
     let amount: Double
     let category: String

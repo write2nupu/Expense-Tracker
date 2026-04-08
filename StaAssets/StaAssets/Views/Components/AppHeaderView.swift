@@ -23,7 +23,7 @@ struct AppHeaderView: View {
                             .foregroundStyle(.primary)
                     )
                 
-                Text("StaAssets")
+                Text("Cashify")
                     .font(.headline)
                     .foregroundStyle(.primary)
             }
@@ -66,7 +66,6 @@ struct AppHeaderView: View {
                     }
                 }
                 
-                // 🔍 FILTER (only when needed)
                 if showFilter, let onFilterTap {
                     Button(action: onFilterTap) {
                         Image(systemName: "line.3.horizontal.decrease.circle")

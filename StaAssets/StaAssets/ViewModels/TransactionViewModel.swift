@@ -2,11 +2,16 @@
 import Foundation
 import CoreData
 import Combine
+import SwiftUI
 
 final class TransactionViewModel: ObservableObject {
     
     @Published var transactions: [Transaction] = []
-    @Published var balance: Double = 0
+    var balance: Double {
+        transactions.reduce(0) {
+            $0 + ($1.isIncome ? $1.amount : -$1.amount)
+        }
+    }
     @Published var alertMessage: String = ""
     @Published var showAlert: Bool = false
     @Published var notifications: [String] = []
@@ -46,19 +51,25 @@ final class TransactionViewModel: ObservableObject {
             return
         }
         
+        let newTransaction = TransactionEntity(context: context)
+        newTransaction.id = UUID()
+        newTransaction.amount = amount
+        newTransaction.category = category
+        newTransaction.note = note
+        newTransaction.date = Date()
+        newTransaction.isIncome = isIncome
+        
         let message: String
-
         if isIncome {
-            balance += amount
-            message = "₹\(Int(amount)) credited. Balance: ₹\(Int(balance))"
+            message = "₹\(Int(amount)) credited"
         } else {
-            balance -= amount
-            message = "₹\(Int(amount)) debited. Balance: ₹\(Int(balance))"
+            message = "₹\(Int(amount)) debited"
         }
-
+        
         alertMessage = message
         notifications.insert(message, at: 0)
         showAlert = true
+        save()
     }
     
     // MARK: - Delete
@@ -85,5 +96,17 @@ final class TransactionViewModel: ObservableObject {
         } catch {
             print("Save failed")
         }
+    }
+}
+
+extension Transaction {
+    
+    var displayAmount: String {
+        let sign = isIncome ? "+ " : "- "
+        return "\(sign)₹\(Int(amount))"
+    }
+    
+    var displayColor: Color {
+        isIncome ? .green : .primary
     }
 }

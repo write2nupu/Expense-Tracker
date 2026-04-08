@@ -11,6 +11,11 @@ struct HomeView: View {
     @State private var showFilterSheet = false
     @State private var selectedCategories: Set<String> = []
     @State private var selectedType: String? = nil
+    @State private var selectedPeriod = 0
+    @State private var currentDate = Date()
+    @State private var animateList = false
+    @State private var transactionToDelete: Transaction?
+    @State private var showDeleteAlert = false
     
     @EnvironmentObject var vm: TransactionViewModel
     @EnvironmentObject var userVM: UserViewModel
@@ -52,6 +57,22 @@ struct HomeView: View {
         }
         .alert(vm.alertMessage, isPresented: $vm.showAlert) {
             Button("OK", role: .cancel) {}
+        }
+        .alert("Delete Transaction?", isPresented: $showDeleteAlert) {
+            
+            Button("Delete", role: .destructive) {
+                transactionToDelete = nil
+                if let transactionToDelete {
+                    withAnimation {
+                        vm.deleteTransaction(transactionToDelete)
+                    }
+                }
+            }
+            
+            Button("Cancel", role: .cancel) {}
+            
+        } message: {
+            Text("This action cannot be undone.")
         }
         .sheet(isPresented: $showAddSheet) {
             AddTransactionView { amount, category, note, isIncome in
@@ -155,48 +176,134 @@ extension HomeView {
                 .font(.headline)
                 .foregroundStyle(.primary)
             
-            Picker("", selection: $selectedSegment) {
-                Text("Weekly").tag(0)
-                Text("Monthly").tag(1)
+            VStack(spacing: 12) {
+                
+                HStack {
+                    
+                    Button {
+                        changeDate(by: -1)
+                    } label: {
+                        Image(systemName: "chevron.left")
+                    }
+                    
+                    Spacer()
+                    
+                    Text(formattedDate)
+                        .font(.headline)
+                    
+                    Spacer()
+                    
+                    Button {
+                        changeDate(by: 1)
+                    } label: {
+                        Image(systemName: "chevron.right")
+                    }
+                }
+                
+                // 🔹 Period Toggle
+                Picker("", selection: $selectedPeriod) {
+                    Text("Today").tag(0)
+                    Text("Week").tag(1)
+                    Text("Month").tag(2)
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: selectedPeriod) { _ , _ in
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        currentDate = Date() // reset to current
+                    }
+                }
             }
-            .pickerStyle(.segmented)
             
-            VStack(spacing: 16) {
+            LazyVStack(spacing: 12) {
+                
+                let calendar = Calendar.current
                 
                 let filtered = vm.transactions.filter { transaction in
-                    
-                    // Category
                     let categoryMatch = selectedCategories.isEmpty ||
-                        selectedCategories.contains(transaction.category)
+                    selectedCategories.contains(transaction.category)
                     
-                    // Type
                     let typeMatch: Bool
                     if let selectedType {
-                        if selectedType == "Income" {
-                            typeMatch = transaction.isIncome
-                        } else {
-                            typeMatch = !transaction.isIncome
-                        }
+                        typeMatch = selectedType == "Income" ? transaction.isIncome : !transaction.isIncome
                     } else {
                         typeMatch = true
                     }
                     
-                    return categoryMatch && typeMatch
+                    let dateMatch: Bool
+                    switch selectedPeriod {
+                    case 0:
+                        dateMatch = calendar.isDate(transaction.date, inSameDayAs: currentDate)
+                    case 1:
+                        dateMatch = calendar.isDate(transaction.date, equalTo: currentDate, toGranularity: .weekOfYear)
+                    default:
+                        dateMatch = calendar.isDate(transaction.date, equalTo: currentDate, toGranularity: .month)
+                    }
+                    
+                    return categoryMatch && typeMatch && dateMatch
                 }
                 
                 if filtered.isEmpty {
                     Text("No transactions")
                         .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
                         .padding(.top, 20)
                 } else {
                     ForEach(filtered) { transaction in
+                        
                         expenseCard(transaction: transaction)
+                            .contextMenu {
+                                
+                                Button(role: .destructive) {
+                                    transactionToDelete = transaction
+                                    showDeleteAlert = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                     }
                 }
             }
         }
     }
-    
+    func changeDate(by value: Int) {
+        
+        let calendar = Calendar.current
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            switch selectedPeriod {
+            case 0:
+                currentDate = calendar.date(byAdding: .day, value: value, to: currentDate) ?? currentDate
+            case 1:
+                currentDate = calendar.date(byAdding: .weekOfYear, value: value, to: currentDate) ?? currentDate
+            default:
+                currentDate = calendar.date(byAdding: .month, value: value, to: currentDate) ?? currentDate
+            }
+        }
+    }
+    var formattedDate: String {
+        
+        let formatter = DateFormatter()
+        let calendar = Calendar.current
+        
+        switch selectedPeriod {
+            
+        case 0:
+            formatter.dateFormat = "d MMM yyyy"
+            return formatter.string(from: currentDate)
+            
+        case 1:
+            let interval = calendar.dateInterval(of: .weekOfYear, for: currentDate)
+            let start = interval?.start ?? currentDate
+            let end = calendar.date(byAdding: .day, value: 6, to: start) ?? currentDate
+            
+            formatter.dateFormat = "d MMM"
+            return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
+            
+        default:
+            formatter.dateFormat = "MMMM yyyy"
+            return formatter.string(from: currentDate)
+        }
+    }
     func expenseCard(transaction: Transaction) -> some View {
         
         HStack {
@@ -221,7 +328,8 @@ extension HomeView {
             
             Spacer()
             
-            Text("₹\(Int(transaction.amount))")
+            Text(transaction.displayAmount)
+                .foregroundStyle(transaction.displayColor)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(Color.primary.opacity(0.1))
@@ -232,7 +340,7 @@ extension HomeView {
             ZStack {
                 
                 // Base card (adaptive)
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius:  20)
                     .fill(Color(.secondarySystemBackground))
                 
                 // Gradient (left fade only)

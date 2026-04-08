@@ -4,50 +4,52 @@ import Charts
 
 struct BalanceView: View {
     
-    @StateObject private var vm = TransactionViewModel()
+    @EnvironmentObject var vm: TransactionViewModel
     @State private var showAddSheet = false
     
     @State private var selectedPeriod = 0
     @State private var currentDate = Date()
     
     var body: some View {
-        
-        ZStack {
+        NavigationStack{
             
-            Color(.systemBackground)
-                .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
+            ZStack {
                 
-                AppHeaderView {}
-                    .padding(.horizontal)
+                Color(.systemBackground)
+                    .ignoresSafeArea()
                 
-                ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
                     
-                    VStack(alignment: .leading, spacing: 28) {
+                    AppHeaderView {}
+                        .padding(.horizontal)
+                    
+                    ScrollView(showsIndicators: false) {
                         
-                        header
-                        expenseGaugeView
-                        Spacer()
-                        chartSection
+                        VStack(alignment: .leading, spacing: 28) {
+                            
+                            header
+                            expenseGaugeView
+                            Spacer()
+                            chartSection
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 120)
                     }
-                    .padding(.horizontal)
-                    .padding(.bottom, 120)
+                }
+                
+                FloatingActionButton {
+                    showAddSheet = true
                 }
             }
-            
-            FloatingActionButton {
-                showAddSheet = true
-            }
-        }
-        .sheet(isPresented: $showAddSheet) {
-            AddTransactionView { amount, category, note, isIncome in
-                vm.addTransaction(
-                    amount: amount,
-                    category: category,
-                    note: note,
-                    isIncome: isIncome
-                )
+            .sheet(isPresented: $showAddSheet) {
+                AddTransactionView { amount, category, note, isIncome in
+                    vm.addTransaction(
+                        amount: amount,
+                        category: category,
+                        note: note,
+                        isIncome: isIncome
+                    )
+                }
             }
         }
     }
@@ -138,44 +140,54 @@ extension BalanceView {
                     
                     let gradient = gradientColors(for: item.category)
                     
-                    HStack(spacing: 12) {
+                    NavigationLink {
+                        CategoryDetailView(category: item.category)
+                    } label: {
                         
-                        // 🧩 Icon (colored)
-                        Image(systemName: categoryIcon(item.category))
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: gradient,
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 28, height: 28)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: gradient.map { $0.opacity(0.15) },
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
+                        HStack(spacing: 12) {
+                            
+                            Image(systemName: categoryIcon(item.category))
+                                .font(.system(size: 14, weight: .semibold)) // smaller
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: gradient,
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
                                     )
-                            )
-                        
-                        // 🏷 Category
-                        Text(item.category)
-                        
-                        Spacer()
-                        
-                        // 💰 Amount
-                        Text("₹\(Int(item.amount))")
-                            .font(.subheadline.bold())
+                                )
+                                .frame(width: 32, height: 32) // tighter
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: gradient.map { $0.opacity(0.15) },
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                )
+                            
+                            Text(item.category)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Text("₹\(Int(item.amount))")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 12) // 👈 KEY FIX (was too large)
+                        .padding(.horizontal, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.secondarySystemBackground))
+                        )
                     }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.secondarySystemBackground))
-                    )
                 }
             }
         }

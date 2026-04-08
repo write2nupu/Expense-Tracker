@@ -52,7 +52,7 @@ struct AuthView: View {
                                     .foregroundStyle(.primary)
                             )
                         
-                        Text("Welcome to StaAssets")
+                        Text("Welcome to Cashify")
                             .font(.title2.bold())
                             .foregroundStyle(.primary)
                         
