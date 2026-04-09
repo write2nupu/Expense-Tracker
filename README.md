@@ -89,10 +89,13 @@ This app follows a scalable and production-ready architecture:
 
 ### TestFlight
 
-**Download & Test the App:**  
 **TestFlight build submitted and currently under Apple review.**
 
+**Download & Test the App:**  
 `https://testflight.apple.com/join/XHGFr1Cp`
+
+
+
 
 > Note: Any valid email and password (min 6 characters) will work.
 
